@@ -1,6 +1,7 @@
 - name: get public key
   shell: "ssh-keygen -y -f {{ private_key_path }}"
   register: public_key
+  changed_when: False
 - name: ec2 key pair
   ec2_key:
     name: "{{ key_pair_name }}"
@@ -17,3 +18,41 @@
       KeyName: "{{ key_pair_name }}"
     tags:
       Stack: "ansible"
+  register: core_cf
+- name: security groups cloudformation stack
+  cloudformation:
+    stack_name: "ansible-sg"
+    state: "present"
+    region: "{{ region }}"
+    template: "roles/aws_base/files/cf/sg.yaml"
+    template_parameters:
+      CoreStack: "ansible-cloudformation"
+    tags:
+      Stack: "ansible"
+  register: sg_cf
+- name: "search for the latest CentOS 7 AMI"
+  ec2_ami_find:
+    region: "{{ region }}"
+    owner: 679593333241 # centos.org
+    is_public: yes
+    name: "CentOS Linux 7*"
+    virtualization_type: hvm
+    sort: creationDate
+    sort_order: descending
+    sort_end: 1
+  register: c7_ami_find
+- name: swarm cloudformation stack
+  cloudformation:
+    stack_name: "ansible-swarm"
+    state: "present"
+    region: "{{ region }}"
+    template: "roles/aws_base/files/cf/swarm.yaml"
+    template_parameters:
+      CoreStack: "ansible-cloudformation"
+      SGStack: "ansible-sg"
+      KeyName: "{{ key_pair_name }}"
+      AMIid: "{{ c7_ami_find.results[0].ami_id }}"
+    tags:
+      Stack: "ansible"
+  register: sg_swarm
+

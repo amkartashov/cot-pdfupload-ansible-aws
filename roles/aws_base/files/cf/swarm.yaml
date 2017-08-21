@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Docker Swarm EC2 Instances, ELB, NFS
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2-VPC KeyPair
+    Type: 'AWS::EC2::KeyPair::KeyName'
+  CoreStack:
+    Description: Name of CF stack with core infrastructure
+    Type: String
+    Default: ansible-cloudformation
+  SGStack:
+    Description: Name of CF stack with Security Groups
+    Type: String
+    Default: ansible-sg
+  NameTag:
+    Type: String
+    Default: ansible
+  AMIid:
+    Description: The ID of the AMI, use Centos 7
+    Type: AWS::EC2::Image::Id
+    Default: ami-46c1b650
+  InstanceType:
+    Description: The Instance Type for the instance
+    Type: String
+    Default: t2.micro
+    AllowedValues: [c3.2xlarge, c3.4xlarge, c3.8xlarge, c3.large, c3.xlarge, c4.2xlarge, c4.4xlarge, c4.8xlarge, c4.large, c4.xlarge, d2.2xlarge, d2.4xlarge, d2.8xlarge, d2.xlarge, g2.2xlarge, g2.2xlarge, g2.8xlarge, g2.8xlarge, i2.2xlarge, i2.4xlarge, i2.8xlarge, i2.xlarge, m3.2xlarge, m3.large, m3.medium, m3.xlarge, m4.10xlarge, m4.2xlarge, m4.4xlarge, m4.large, m4.xlarge, r3.2xlarge, r3.4xlarge, r3.8xlarge, r3.large, r3.xlarge, t2.large, t2.large, t2.medium, t2.micro, t2.small]
+Resources:
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      LoadBalancerName: !Sub ELB-${NameTag}
+      Instances:
+      - !Ref SwarmInstance1
+      CrossZone: 'true'
+      SecurityGroups:
+      - Fn::ImportValue: !Sub ${SGStack}-LBSecurityGroup
+      LBCookieStickinessPolicy:
+      - PolicyName: MyLBPolicy
+        CookieExpirationPeriod: '3600'
+      Subnets:
+      - Fn::ImportValue: !Sub ${CoreStack}-PublicSubnetA
+      Listeners:
+      - LoadBalancerPort: '80'
+        InstancePort: '80'
+        Protocol: HTTP
+        PolicyNames: [MyLBPolicy]
+      HealthCheck:
+        Target: TCP:80
+        HealthyThreshold: '2'
+        UnhealthyThreshold: '2'
+        Interval: '10'
+        Timeout: '5'
+  SwarmInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SubnetId: 
+        Fn::ImportValue: !Sub ${CoreStack}-PublicSubnetA
+      ImageId: !Ref AMIid
+      SecurityGroupIds:
+      - Fn::ImportValue: !Sub ${SGStack}-SwarmSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${NameTag}-SwarmInstance1
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # !!!! Don't forget this script is inside "Fn::Sub"
+          # if you need to use bash parameter expansion with braces
+          # put exclamation mark after the first brace, like this
+          # ${!variable_name}
+          # see also: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-sub.html
+          yum install -y yum-utils device-mapper-persistent-data lvm2
+          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+          yum-config-manager --enable docker-ce-edge
+          yum makecache fast
+          yum install docker-ce -y
+
+          systemctl stop firewalld
+          systemctl disable firewalld
+          mkdir -p /etc/docker
+          echo '{ "hosts": ["unix:///var/run/docker.sock", "tcp://0.0.0.0:2375"] }' > /etc/docker/daemon.json
+          systemctl enable docker
+          systemctl start docker
+

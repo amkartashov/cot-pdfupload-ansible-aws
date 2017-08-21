@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: VPC Security Groups
+Parameters:
+  CoreStack:
+    Description: Name of CF stack with core infrastructure
+    Type: String
+    Default: ansible-cloudformation
+  NameTag:
+    Description: Name of Environment
+    Type: String
+    Default: ansible
+Resources:
+  LBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SG for ELB
+      Tags:
+      - Key: Name
+        Value: !Sub elb-${NameTag}
+      VpcId:
+        Fn::ImportValue: !Sub ${CoreStack}-VPCID
+      SecurityGroupIngress:
+      - {IpProtocol: tcp, FromPort: '80', ToPort: '80', CidrIp: 0.0.0.0/0}
+      - {IpProtocol: tcp, FromPort: '443', ToPort: '443', CidrIp: 0.0.0.0/0}
+  SwarmSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: PAConnectSecurityGroup
+      Tags:
+      - Key: Name
+        Value: !Sub swarm-${NameTag}
+      VpcId:
+        Fn::ImportValue: !Sub ${CoreStack}-VPCID
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        SourceSecurityGroupId: !Ref LBSecurityGroup
+  SwarmSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SwarmSecurityGroup
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref SwarmSecurityGroup
+  EfsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub EfsSecurityGroup-${NameTag}
+      Tags:
+      - Key: Name
+        Value: !Sub efs-${NameTag}
+      VpcId:
+        Fn::ImportValue: !Sub "${CoreStack}-VPCID"
+      SecurityGroupIngress:
+      - { IpProtocol: tcp, FromPort: 2049, ToPort: 2049, SourceSecurityGroupId: !Ref SwarmSecurityGroup }
+Outputs:
+  LBSecurityGroup:
+    Description: SG for ELB
+    Value: !Ref LBSecurityGroup
+    Export: 
+      Name: !Sub ${AWS::StackName}-LBSecurityGroup
+  SwarmSecurityGroup:
+    Description: SG for Swarm EC2 instances
+    Value: !Ref SwarmSecurityGroup
+    Export: 
+      Name: !Sub ${AWS::StackName}-SwarmSecurityGroup
+  EfsSecurityGroup:
+    Description: SG for EFS
+    Value: !Ref EfsSecurityGroup
+    Export: 
+      Name: !Sub ${AWS::StackName}-EfsSecurityGroup
