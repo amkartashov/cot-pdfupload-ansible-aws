@@ -1,0 +1,19 @@
+- name: get public key
+  shell: "ssh-keygen -y -f {{ private_key_path }}"
+  register: public_key
+- name: ec2 key pair
+  ec2_key:
+    name: "{{ key_pair_name }}"
+    region: "{{ region }}"
+    key_material: "{{ public_key.stdout }}"
+  register: ec2_key
+- name: core cloudformation stack
+  cloudformation:
+    stack_name: "ansible-cloudformation"
+    state: "present"
+    region: "{{ region }}"
+    template: "roles/aws_base/files/cf/core.yaml"
+    template_parameters:
+      KeyName: "{{ key_pair_name }}"
+    tags:
+      Stack: "ansible"

@@ -1,0 +1,16 @@
+- hosts: aws
+  gather_facts: False
+  vars_prompt:
+    - name: region
+      prompt: aws region?
+      default: us-east-1
+      private: no
+    - name: key_pair_name
+      prompt: Name for key pair in AWS?
+      default: ansible_key
+      private: no
+    - name: private_key_path
+      prompt: path to private key (should exist)?
+      private: no
+  roles:
+    - role: aws_base
