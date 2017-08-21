@@ -40,7 +40,8 @@ Resources:
           Value: !Join [-, [public, !Ref NameTag, !Select [0, !GetAZs ]]]
       VpcId: !Ref VPC
       CidrBlock: !Ref PublicSubnetACIDR
-      AvailabilityZone: !Select [0, !GetAZs ] 
+      AvailabilityZone: !Select [0, !GetAZs ]
+      MapPublicIpOnLaunch: True
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:

@@ -10,7 +10,7 @@
   register: ec2_key
 - name: core cloudformation stack
   cloudformation:
-    stack_name: "ansible-cloudformation"
+    stack_name: "ansible-core"
     state: "present"
     region: "{{ region }}"
     template: "roles/aws_base/files/cf/core.yaml"
@@ -26,7 +26,7 @@
     region: "{{ region }}"
     template: "roles/aws_base/files/cf/sg.yaml"
     template_parameters:
-      CoreStack: "ansible-cloudformation"
+      CoreStack: "ansible-core"
     tags:
       Stack: "ansible"
   register: sg_cf
@@ -48,7 +48,7 @@
     region: "{{ region }}"
     template: "roles/aws_base/files/cf/swarm.yaml"
     template_parameters:
-      CoreStack: "ansible-cloudformation"
+      CoreStack: "ansible-core"
       SGStack: "ansible-sg"
       KeyName: "{{ key_pair_name }}"
       AMIid: "{{ c7_ami_find.results[0].ami_id }}"
