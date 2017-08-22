@@ -55,4 +55,15 @@
     tags:
       Stack: "ansible"
   register: sg_swarm
+- name: download ec2 dynamic inventory
+  get_url: 
+    url: https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.py
+    dest: "{{ playbook_dir }}/inventory/"
+    mode: 0755
+- name: download ec2 dynamic inventory ini
+  get_url:
+    url: https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.ini
+    dest: "{{ playbook_dir }}/inventory/"
+- name: refresh dynamic inventory
+  meta: refresh_inventory
 
