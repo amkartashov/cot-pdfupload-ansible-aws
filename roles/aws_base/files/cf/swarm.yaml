@@ -56,6 +56,10 @@ Resources:
         InstancePort: '80'
         Protocol: HTTP
         PolicyNames: [MyLBPolicy]
+      - LoadBalancerPort: '8080'
+        InstancePort: '8080'
+        Protocol: HTTP
+        PolicyNames: [MyLBPolicy]
       HealthCheck:
         Target: TCP:80
         HealthyThreshold: '2'

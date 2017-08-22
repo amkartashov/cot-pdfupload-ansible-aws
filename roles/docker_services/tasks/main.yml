@@ -33,3 +33,12 @@
   failed_when: >
     pdfupload_service.rc !=0 and ("exist" not in pdfupload_service.stderr)
   changed_when: "pdfupload_service.rc == 0"
+- name: docker swarm monitor docker service
+  shell: >
+    docker service create --name dsm --replicas 3 -p 8080:80
+    --mount type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
+    {{ dsm_image }}
+  register: dsm_service
+  failed_when: >
+    dsm_service.rc !=0 and ("exist" not in dsm_service.stderr)
+  changed_when: "dsm_service.rc == 0"
