@@ -1,0 +1,10 @@
+- name: mkdir /efs/upload
+  file: 
+    path: /efs/upload
+    state: directory
+  register: efs_upload
+- name: copy pdfs to /efs/upload/ 
+  copy:
+    src: "{{ data_dir }}"
+    dest: /efs/upload/
+  when: efs_upload.changed

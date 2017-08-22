@@ -1,0 +1,18 @@
+- hosts: tag_Name_ansible_SwarmInstance1
+  user: centos
+  become: yes
+  become_method: sudo
+  vars_prompt:
+    prompt: path to PDFs (put / in the end)?
+    name: upload_data
+    private: no
+  roles:
+  - role: efs_populate
+    vars:
+      data_dir: "{{ upload_data }}"
+  - role: docker_services
+    vars:
+      pdfupload_image: gorilych/cot-pdfupload:latest
+      dsm_image: gorilych/cot-dsm:latest
+
+

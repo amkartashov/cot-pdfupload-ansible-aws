@@ -1,0 +1,35 @@
+- name: mkdir /efs/mysql
+  file: 
+    path: /efs/mysql
+    state: directory
+  register: efs_mysql
+- name: mysql network
+  shell: >
+    docker network create --driver overlay
+    --subnet 10.1.0.0/24 --gateway 10.1.0.1
+    mysql-network
+  register: mysql_network
+  failed_when: >
+    mysql_network.rc !=0 and ("exist" not in mysql_network.stderr)
+  changed_when: "mysql_network.rc == 0"
+- name: mysql docker service
+  shell: >
+    docker service create --name mysql --network mysql-network 
+    --mount type=bind,src=/efs/mysql,dst=/var/lib/mysql --replicas 1 
+    --env MYSQL_ROOT_PASSWORD=secret --env MYSQL_DATABASE=journals 
+    --env MYSQL_USER=dbuser --env MYSQL_PASSWORD=secret mysql:5.7
+  register: mysql_service
+  failed_when: >
+    mysql_service.rc !=0 and ("exist" not in mysql_service.stderr)
+  changed_when: "mysql_service.rc == 0"
+- name: pdfupload docker service
+  shell: >
+    docker service create --network mysql-network --name pdfupload
+    --mount type=bind,src=/efs/upload,dst=/root/upload --replicas 3
+    -p 80:8080 --env DBSRV=mysql:3306 --env DBUSER=dbuser 
+    --env DBUSERPWD=secret --env DBNAME=journals 
+    {{ pdfupload_image }}
+  register: pdfupload_service
+  failed_when: >
+    pdfupload_service.rc !=0 and ("exist" not in pdfupload_service.stderr)
+  changed_when: "pdfupload_service.rc == 0"
