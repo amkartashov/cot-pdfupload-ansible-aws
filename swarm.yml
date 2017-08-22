@@ -1,0 +1,26 @@
+- hosts: tag_aws_cloudformation_stack_name_ansible_swarm
+  gather_facts: False
+  tasks:
+    - name: Wait for EC2 instances to come up
+      local_action:
+        module: wait_for
+        host: "{{ ec2_ip_address }}"
+        port: 22
+        delay: 60
+        timeout: 320
+        state: started
+- hosts: tag_Name_ansible_SwarmInstance1
+  user: centos
+  become: yes
+  become_method: sudo
+  roles:
+    - role: swarm_init
+- hosts: tag_aws_cloudformation_stack_name_ansible_swarm:!tag_Name_ansible_SwarmInstance1
+  user: centos
+  become: yes
+  become_method: sudo
+  roles:
+    - role: swarm_join
+      vars:
+        join_command: "{{ hostvars[groups['tag_Name_ansible_SwarmInstance1'][0]]['join_command'].stdout }}"
+
