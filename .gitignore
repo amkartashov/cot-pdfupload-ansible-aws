@@ -1,2 +1,7 @@
 # virtualenv environment
 env
+
+inventory/ec2.ini
+inventory/ec2.py
+
+*.retry
