@@ -116,7 +116,7 @@ Resources:
       - Fn::ImportValue: !Sub ${SGStack}-SwarmSecurityGroup
       Tags:
         - Key: Name
-          Value: !Sub ${NameTag}-SwarmInstance1
+          Value: !Sub ${NameTag}-SwarmInstance2
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -157,7 +157,7 @@ Resources:
       - Fn::ImportValue: !Sub ${SGStack}-SwarmSecurityGroup
       Tags:
         - Key: Name
-          Value: !Sub ${NameTag}-SwarmInstance1
+          Value: !Sub ${NameTag}-SwarmInstance3
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
