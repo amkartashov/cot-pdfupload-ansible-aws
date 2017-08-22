@@ -1,2 +1,4 @@
 - name: join swarm
   command: "{{ join_command }}"
+  ignore_errors: yes
+  changed_when: False
